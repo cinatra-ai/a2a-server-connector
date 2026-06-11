@@ -1,6 +1,9 @@
 {
   "name": "@cinatra-ai/a2a-server-connector",
   "version": "0.1.0",
+  "files": [
+    "src"
+  ],
   "license": "Apache-2.0",
   "type": "module",
   "main": "src/index.ts",
