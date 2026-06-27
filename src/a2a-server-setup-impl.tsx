@@ -232,7 +232,7 @@ export async function A2AServerConnectorPageImpl(props: {
                     <div className="flex shrink-0 items-center gap-3">
                       <StatusPill status="approved">Connected</StatusPill>
                       <form action={removeA2AConnectionAction}>
-                        <input type="hidden" name="connectionId" value={conn.connectionId} />
+                        <Input type="hidden" name="connectionId" value={conn.connectionId} />
                         <Button type="submit" variant="outline" size="sm">
                           Remove
                         </Button>
