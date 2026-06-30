@@ -41,6 +41,7 @@
     "apiVersion": "cinatra.ai/v1",
     "kind": "connector",
     "displayName": "A2A Servers",
+    "sdkAbiRange": "^2",
     "requestedHostPorts": [
       "nango"
     ],
