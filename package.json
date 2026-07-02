@@ -52,6 +52,7 @@
     "requestedHostPorts": [
       "nango"
     ],
-    "dependencies": []
+    "dependencies": [],
+    "consumes": []
   }
 }
