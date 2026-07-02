@@ -13,31 +13,14 @@ import { Input } from "./components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./components/ui/input-group";
 import { FieldGroup, Field, FieldLabel } from "./components/ui/field";
 import { Alert, AlertDescription } from "./components/ui/alert";
+import {
+  normalizeBaseUrl,
+  connectionIdFromNormalized,
+  fetchAgentCard,
+  slugifyAgentName,
+} from "./a2a-server-helpers";
 
 export const metadata: Metadata = { title: "A2A Server | Connectors | Cinatra" };
-
-function normalizeBaseUrl(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  try {
-    const u = new URL(trimmed);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    return `${u.protocol.toLowerCase()}//${u.host.toLowerCase()}`.replace(/\/+$/, "");
-  } catch {
-    return null;
-  }
-}
-
-function connectionIdFromNormalized(normalized: string): string {
-  const slug = normalized
-    .replace(/^https?:\/\//, "")
-    .replace(/[^a-z0-9]/gi, "-")
-    .toLowerCase()
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
-  return `a2a-dev-${slug}`;
-}
 
 async function addA2AConnectionAction(formData: FormData) {
   "use server";
@@ -85,34 +68,12 @@ async function addA2AConnectionAction(formData: FormData) {
   }
 
   // Attempt card fetch for real agent name; fall back to connectionId.
-  let name = connectionId;
-  let description: string | null = null;
-  let version: string | null = null;
-  try {
-    const headers: Record<string, string> = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
-    for (const path of ["/.well-known/agent.json", "/.well-known/agent-card.json"]) {
-      try {
-        const res = await fetch(`${normalized}${path}`, { headers });
-        if (res.ok) {
-          const card = (await res.json()) as { name?: unknown; description?: unknown; version?: unknown };
-          name = typeof card.name === "string" && card.name ? card.name : connectionId;
-          description = typeof card.description === "string" ? card.description : null;
-          version = typeof card.version === "string" ? card.version : null;
-          break;
-        }
-      } catch {
-        // try next path
-      }
-    }
-  } catch {
-    // card fetch failed — use synthetic name
-  }
+  const card = await fetchAgentCard(normalized!, apiKey, connectionId);
+  const name = card?.name ?? connectionId;
+  const description = card?.description ?? null;
+  const version = card?.version ?? null;
 
-  const remoteAgentId = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64) || "agent";
+  const remoteAgentId = slugifyAgentName(name);
 
   await a2a.upsertExternalAgentTemplate({
     connectorSlug: connectionId,
