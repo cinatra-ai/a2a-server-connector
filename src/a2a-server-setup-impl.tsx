@@ -93,6 +93,15 @@ async function removeA2AConnectionAction(formData: FormData) {
   const a2a = requireA2AConnectionProvider();
   const connectionId = formData.get("connectionId") as string;
   if (!connectionId) redirect("/connectors/cinatra-ai/a2a-server-connector/setup");
+  const providerConfigKey = a2a.providerConfigKeyFor("a2aServer");
+  // Scrub the stored Nango bearer FIRST. `addA2AConnectionAction` imports an
+  // API_KEY credential into the vault via `importConnection`; dropping only the
+  // record row (below) would orphan that bearer. `deleteConnection` is
+  // authoritative and fail-closed — it PROPAGATES a real failure (including when
+  // Nango is unreachable, where the scrub can't be confirmed), so a failed scrub
+  // ABORTS here and the record + templates are RETAINED for retry rather than
+  // dropped while the bearer lingers. Idempotent on an already-absent connection.
+  await a2a.deleteConnection({ connectorKey: "a2aServer", providerConfigKey, connectionId });
   await Promise.all([
     a2a.removeConnectionRecord("a2aServer", connectionId),
     a2a.deleteExternalAgentTemplatesByConnectorSlug(connectionId),
