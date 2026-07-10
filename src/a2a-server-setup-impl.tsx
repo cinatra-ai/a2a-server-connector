@@ -1,26 +1,36 @@
 import "server-only";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import {
   requireExtensionAction,
   requireA2AConnectionProvider,
 } from "@cinatra-ai/sdk-extensions";
+import { flashHref } from "@cinatra-ai/sdk-extensions/flash-href";
 import type { ExtensionHostContext } from "@cinatra-ai/sdk-extensions";
 import { Main, PageHeader, PageContent, StatusPill } from "@cinatra-ai/sdk-ui/marketplace";
+import { SearchParamToast } from "@cinatra-ai/sdk-ui/search-param-toast";
 import { Button } from "./components/ui/button";
 import { LinkIcon } from "lucide-react";
 import { Input } from "./components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./components/ui/input-group";
 import { FieldGroup, Field, FieldLabel } from "./components/ui/field";
-import { Alert, AlertDescription } from "./components/ui/alert";
 import {
   normalizeBaseUrl,
   connectionIdFromNormalized,
   fetchAgentCard,
   slugifyAgentName,
 } from "./a2a-server-helpers";
+import { A2A_FLASH_TOASTS } from "./a2a-flash";
 
 export const metadata: Metadata = { title: "A2A Server | Connectors | Cinatra" };
+
+// Codes-only flash protocol (toast-notifications epic, cinatra-ai/cinatra#1107
+// S3): the actions below redirect back to this page carrying `?notice=<code>`
+// / `?error=<code>`; the <SearchParamToast> island mounted in the page body
+// maps each code to the static message in ./a2a-flash — never URL-derived
+// text.
+const SETUP_PATH = "/connectors/cinatra-ai/a2a-server-connector/setup";
 
 async function addA2AConnectionAction(formData: FormData) {
   "use server";
@@ -34,7 +44,7 @@ async function addA2AConnectionAction(formData: FormData) {
 
   const normalized = normalizeBaseUrl(rawUrl);
   if (!normalized) {
-    redirect("/connectors/cinatra-ai/a2a-server-connector/setup?error=invalid-url");
+    redirect(flashHref(SETUP_PATH, { error: "invalid-url" }));
   }
 
   const connectionId = connectionIdFromNormalized(normalized!);
@@ -84,7 +94,7 @@ async function addA2AConnectionAction(formData: FormData) {
     version,
   });
 
-  redirect("/connectors/cinatra-ai/a2a-server-connector/setup?added=1");
+  redirect(flashHref(SETUP_PATH, { notice: "added" }));
 }
 
 async function removeA2AConnectionAction(formData: FormData) {
@@ -92,7 +102,7 @@ async function removeA2AConnectionAction(formData: FormData) {
   await requireExtensionAction("@cinatra-ai/a2a-server-connector", "manage");
   const a2a = requireA2AConnectionProvider();
   const connectionId = formData.get("connectionId") as string;
-  if (!connectionId) redirect("/connectors/cinatra-ai/a2a-server-connector/setup");
+  if (!connectionId) redirect(SETUP_PATH);
   const providerConfigKey = a2a.providerConfigKeyFor("a2aServer");
   // Scrub the stored Nango bearer FIRST. `addA2AConnectionAction` imports an
   // API_KEY credential into the vault via `importConnection`; dropping only the
@@ -106,47 +116,33 @@ async function removeA2AConnectionAction(formData: FormData) {
     a2a.removeConnectionRecord("a2aServer", connectionId),
     a2a.deleteExternalAgentTemplatesByConnectorSlug(connectionId),
   ]);
-  redirect("/connectors/cinatra-ai/a2a-server-connector/setup?removed=1");
+  redirect(flashHref(SETUP_PATH, { notice: "removed" }));
 }
 
 type SearchParams = Record<string, string | string[] | undefined>;
-function pickParam(v: string | string[] | undefined) {
-  return Array.isArray(v) ? v[0] : v;
-}
 
 export async function A2AServerConnectorPageImpl(props: {
   ctx: ExtensionHostContext;
   searchParams?: Promise<SearchParams>;
 }) {
   const connections = (await props.ctx.nango.listConnectionRecords?.("a2aServer")) ?? [];
-  const sp = (await props.searchParams) ?? {};
-  const added = pickParam(sp.added);
-  const removed = pickParam(sp.removed);
-  const error = pickParam(sp.error);
+  // searchParams is still accepted (host dispatch passes it in), but the flash
+  // outcomes are no longer read server-side for banner rendering — the
+  // <SearchParamToast> island below owns them client-side (one-shot toast +
+  // param strip). Awaited here only to preserve prop consumption for any
+  // future non-flash search params.
+  await props.searchParams;
 
   return (
     <Main className="min-h-screen">
+      <Suspense fallback={null}>
+        <SearchParamToast toasts={A2A_FLASH_TOASTS} />
+      </Suspense>
       <PageHeader
         title="A2A Server"
         description="Connect external Agent-to-Agent servers. Each server exposes one agent reachable at its well-known card URL."
       />
       <PageContent className="flex flex-col gap-6 pb-8">
-        {added ? (
-          <Alert variant="success" className="rounded-control">
-            <AlertDescription>A2A server connected and agent template created.</AlertDescription>
-          </Alert>
-        ) : null}
-        {removed ? (
-          <Alert variant="warning" className="rounded-control">
-            <AlertDescription>Connection removed.</AlertDescription>
-          </Alert>
-        ) : null}
-        {error === "invalid-url" ? (
-          <Alert variant="destructive" className="rounded-control">
-            <AlertDescription>Invalid URL — must start with http:// or https://.</AlertDescription>
-          </Alert>
-        ) : null}
-
         <section className="soft-panel rounded-panel p-5">
           <h2 className="mb-4 text-sm font-semibold text-foreground">Add A2A server</h2>
           <form action={addA2AConnectionAction} className="grid gap-4">
