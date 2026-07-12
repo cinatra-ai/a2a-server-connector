@@ -21,6 +21,12 @@ import { createRequire } from "node:module";
 // fails to resolve. Inside the cinatra monorepo, where every one of these IS
 // resolvable via the workspace, resolution succeeds and no alias applies, so
 // the monorepo's test run exercises the real host code, never a stub.
+//
+// `lucide-react` follows the same shape (a real npm package, but not declared
+// as a dependency of THIS extension — it resolves only once the monorepo
+// hoists it) — aliased to a minimal local stub (not vendored — its surface is
+// generic enough to hand-write) so a test can import a2a-server-setup-impl.tsx
+// (which uses `LinkIcon`) standalone.
 const stubs = path.join(__dirname, "src/__tests__/__stubs__");
 const require = createRequire(import.meta.url);
 
@@ -38,6 +44,7 @@ const alias = [
   resolvableOrStub("@cinatra-ai/sdk-ui/search-param-toast", "search-param-toast.tsx"),
   resolvableOrStub("next/navigation", "next-navigation.ts"),
   resolvableOrStub("sonner", "sonner.ts"),
+  resolvableOrStub("lucide-react", "lucide-react.tsx"),
 ].filter((entry): entry is { find: string; replacement: string } => entry !== null);
 
 export default defineConfig({
