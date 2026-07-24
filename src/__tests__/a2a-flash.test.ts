@@ -41,7 +41,7 @@ describe("A2A_FLASH_TOASTS (flash-code path)", () => {
   });
 
   it("never toasts URL-derived text — every message is one of the static strings", () => {
-    const known = new Set([...Object.values(A2A_NOTICE_MESSAGES), ...Object.values(A2A_ERROR_MESSAGES)]);
+    const known = new Set<string>([...Object.values(A2A_NOTICE_MESSAGES), ...Object.values(A2A_ERROR_MESSAGES)]);
     for (const entry of A2A_FLASH_TOASTS) {
       expect(known.has(entry.message)).toBe(true);
     }
