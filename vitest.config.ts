@@ -27,6 +27,25 @@ import { createRequire } from "node:module";
 // hoists it) — aliased to a minimal local stub (not vendored — its surface is
 // generic enough to hand-write) so a test can import a2a-server-setup-impl.tsx
 // (which uses `LinkIcon`) standalone.
+//
+// TWO of these entries are the EXCEPTION to "real when resolvable", and are
+// stubbed UNCONDITIONALLY (cinatra#2288):
+//
+//   * `next/navigation` — `useRouter()` is not a thing a unit test can use
+//     "for real": outside a mounted Next App Router it throws
+//     `invariant expected app router to be mounted`. Inside the monorepo the
+//     real module DOES resolve, so the conditional alias stepped aside and
+//     every DOM test in this repo died on that invariant — 6 failures that no
+//     gate ran, because the monorepo layout is exactly the one this repo's own
+//     CI defers to.
+//   * `sonner` — the assertions here are `expect(toast.success).toHaveBeenCalled…`
+//     against the vi.fn() spies the TEST imports from `./__stubs__/sonner`. If
+//     the component under test resolves the real `sonner` instead, it calls a
+//     different object and the assertion can only ever be vacuous or red.
+//
+// Both are test SEAMS, not host code under test: the code actually exercised
+// is still the real `@cinatra-ai/sdk-ui` <SearchParamToast> and this repo's
+// real flash config.
 const stubs = path.join(__dirname, "src/__tests__/__stubs__");
 const require = createRequire(import.meta.url);
 
@@ -39,11 +58,17 @@ function resolvableOrStub(specifier: string, stubFile: string) {
   }
 }
 
+// Always aliased, in BOTH layouts — see the `next/navigation` / `sonner` note
+// above.
+function alwaysStub(specifier: string, stubFile: string) {
+  return { find: specifier, replacement: path.join(stubs, stubFile) };
+}
+
 const alias = [
   resolvableOrStub("@cinatra-ai/sdk-extensions/flash-href", "flash-href.ts"),
   resolvableOrStub("@cinatra-ai/sdk-ui/search-param-toast", "search-param-toast.tsx"),
-  resolvableOrStub("next/navigation", "next-navigation.ts"),
-  resolvableOrStub("sonner", "sonner.ts"),
+  alwaysStub("next/navigation", "next-navigation.ts"),
+  alwaysStub("sonner", "sonner.ts"),
   resolvableOrStub("lucide-react", "lucide-react.tsx"),
 ].filter((entry): entry is { find: string; replacement: string } => entry !== null);
 
