@@ -20,11 +20,10 @@
 // primitive in production and are out of scope for a markup-level pin.
 //
 // `@cinatra-ai/sdk-ui/marketplace` (StatusPill) is likewise mocked. The
-// Disconnect confirmation's `AlertDialog` (./components/ui/dialog.tsx) is a
-// vendored, connector-owned component built on the real `radix-ui` package
-// (a genuine dependency of this repo, unlike the host-provided `sdk-ui`
-// subpaths) — left UNMOCKED so its tests below exercise real Radix dialog
-// behavior (open/close state, a11y attributes, focus).
+// Disconnect confirmation uses the host-served `AlertDialog`. The standalone
+// suite aliases it to a real-Radix fixture; the supplemental host-context suite
+// exercises the actual host component. Both exercise dialog open/close state,
+// accessibility attributes and focus without mocking the Radix implementation.
 
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
