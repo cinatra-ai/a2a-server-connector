@@ -65,6 +65,7 @@ function alwaysStub(specifier: string, stubFile: string) {
 }
 
 const alias = [
+  { find: "@cinatra-ai/design-primitives", replacement: path.join(__dirname, "src/__tests__/fixtures/design-primitives.tsx") },
   resolvableOrStub("@cinatra-ai/sdk-extensions/flash-href", "flash-href.ts"),
   resolvableOrStub("@cinatra-ai/sdk-ui/search-param-toast", "search-param-toast.tsx"),
   alwaysStub("next/navigation", "next-navigation.ts"),

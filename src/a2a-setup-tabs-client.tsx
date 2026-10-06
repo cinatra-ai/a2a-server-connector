@@ -12,7 +12,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Tabs, TabsListRow, TabsTrigger, TabsContent } from "@cinatra-ai/sdk-ui/tabs";
-import { Button } from "./components/ui/button";
+import { Button } from "@cinatra-ai/design-primitives";
 
 export type A2ATabValue = "setup" | "connections" | "help";
 

@@ -11,12 +11,15 @@ import type { ExtensionHostContext } from "@cinatra-ai/sdk-extensions";
 import { ConnectorSetupPage } from "@cinatra-ai/sdk-ui/connector-setup-page";
 import { StatusPill } from "@cinatra-ai/sdk-ui/marketplace";
 import { SearchParamToast } from "@cinatra-ai/sdk-ui/search-param-toast";
-import { Button } from "./components/ui/button";
-import { LinkIcon } from "lucide-react";
-import { Input } from "./components/ui/input";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "./components/ui/input-group";
-import { FieldGroup, Field, FieldLabel } from "./components/ui/field";
 import {
+  Button,
+  Input,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  FieldGroup,
+  Field,
+  FieldLabel,
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogContent,
@@ -26,7 +29,12 @@ import {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
-} from "./components/ui/dialog";
+} from "@cinatra-ai/design-primitives";
+import { LinkIcon } from "lucide-react";
+
+
+
+
 // Client-side controlled Tabs shell (see that file's header comment for why
 // this needs its own "use client" module) — composes the shared
 // `@cinatra-ai/sdk-ui/tabs` primitive, it does not reimplement it.
